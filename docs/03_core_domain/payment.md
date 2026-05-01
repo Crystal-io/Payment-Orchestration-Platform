@@ -128,30 +128,29 @@ Examples:
 
 ## 8. Example (JSON Representation)
 
+```json
 {
-"id": "pay_123",
-"merchant_id": "m_456",
-"amount": 100.00,
-"currency": "EUR",
-"status": "PENDING",
-"description": "Order #1001",
-"return_url": "https://merchant.com/return",
-"metadata": {
-"order_id": "1001"
-},
-"antifraud_result": {
-"decision": "ALLOW",
-"score": 10
-},
-"routing_decision": {
-"psp": "Stripe"
-},
-"next_action": null,
-"created_at": "2026-01-01T10:00:00Z",
-"updated_at": "2026-01-01T10:00:05Z"
+  "id": "pay_123",
+  "merchant_id": "m_456",
+  "amount": 100.00,
+  "currency": "EUR",
+  "status": "PENDING",
+  "description": "Order #1001",
+  "return_url": "https://merchant.com/return",
+  "metadata": {
+    "order_id": "1001"
+  },
+  "antifraud_result": {
+    "decision": "ALLOW",
+    "score": 10
+  },
+  "routing_decision": {
+    "psp": "Stripe"
+  },
+  "next_action": null,
+  "created_at": "2026-01-01T10:00:00Z",
+  "updated_at": "2026-01-01T10:00:05Z"
 }
-
----
 
 ## 9. Key Decisions
 
@@ -169,3 +168,4 @@ Examples:
 - Missing idempotency may cause duplicate payments
 
 ---
+```

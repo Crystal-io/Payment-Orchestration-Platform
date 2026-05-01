@@ -128,7 +128,7 @@ Examples:
 
 ## 8. Example (JSON Representation)
 
-````json
+`````json
 {
   "id": "pay_123",
   "merchant_id": "m_456",
@@ -151,7 +151,9 @@ Examples:
   "created_at": "2026-01-01T10:00:00Z",
   "updated_at": "2026-01-01T10:00:05Z"
 }
-```
+
+````json
+---
 
 ## 9. Key Decisions
 
@@ -169,4 +171,4 @@ Examples:
 - Missing idempotency may cause duplicate payments
 
 ---
-````
+`````

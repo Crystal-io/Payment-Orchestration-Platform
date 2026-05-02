@@ -34,6 +34,10 @@ stateDiagram-v2
     UNKNOWN --> [*]
 ```
 
+## Payment Status Diagram
+
+![Payment Status Model](../../diagrams/uml/payment_status_model.png)
+
 ## 1. Overview
 
 This document defines the payment lifecycle and all possible states of a Payment.

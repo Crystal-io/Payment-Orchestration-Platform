@@ -18,6 +18,7 @@ The status model is a core part of the system and ensures:
 - **Single Source of Truth** — status is stored in Payment
 - **Deterministic Transitions** — no ambiguous state changes
 - **Async-first** — system handles delayed and duplicated events
+- **Webhook-driven truth** — final state is determined by PSP webhooks
 
 ---
 
@@ -33,35 +34,44 @@ The status model is a core part of the system and ensures:
 
 ### 3.2 Processing States
 
-| Status          | Description                                 |
-| --------------- | ------------------------------------------- |
-| PENDING         | Payment is being processed                  |
-| REQUIRES_ACTION | Additional user action required (e.g., 3DS) |
-| PROCESSING      | Payment is being processed by PSP           |
+| Status          | Description                                                        |
+| --------------- | ------------------------------------------------------------------ |
+| PENDING         | Payment is accepted and waiting for processing (fraud/routing/PSP) |
+| REQUIRES_ACTION | Additional user action required (e.g., 3DS, redirect)              |
+| PROCESSING      | Payment is being processed by PSP                                  |
 
 ---
 
-### 3.3 Success States
+### 3.3 Intermediate States
 
-| Status     | Description                     |
-| ---------- | ------------------------------- |
-| AUTHORIZED | Funds are reserved              |
-| CAPTURED   | Funds are successfully captured |
+| Status     | Description                             |
+| ---------- | --------------------------------------- |
+| AUTHORIZED | Funds are reserved but not yet captured |
 
 ---
 
-### 3.4 Failure States
+### 3.4 Success States
 
-| Status    | Description                         |
-| --------- | ----------------------------------- |
-| FAILED    | Payment failed                      |
-| CANCELLED | Payment cancelled by system or user |
+| Status   | Description                                           |
+| -------- | ----------------------------------------------------- |
+| CAPTURED | Funds are successfully captured (final success state) |
+
+---
+
+### 3.5 Failure & Final States
+
+| Status                   | Description                                                            |
+| ------------------------ | ---------------------------------------------------------------------- |
+| FAILED                   | Payment failed due to PSP decline, error, or validation                |
+| CANCELLED                | Payment cancelled by user, merchant, or system                         |
+| AUTHORIZATION_INCOMPLETE | User did not complete authorization flow (e.g., abandoned 3DS)         |
+| UNKNOWN                  | Final state cannot be determined after timeout/polling/webhook failure |
 
 ---
 
 ## 4. State Transitions
 
-### 4.1 High-Level Flow
+### 4.1 Main Flow
 
 ```text
 CREATED
@@ -72,9 +82,24 @@ CREATED
   → CAPTURED
 ```
 
----
+### 4.2 Extended Flow
 
-### 4.2 Failure Flow
+PENDING → PROCESSING
+PENDING → REQUIRES_ACTION
+
+REQUIRES_ACTION → PROCESSING
+REQUIRES_ACTION → AUTHORIZATION_INCOMPLETE
+
+PROCESSING → AUTHORIZED
+PROCESSING → CAPTURED
+PROCESSING → FAILED
+PROCESSING → UNKNOWN
+
+AUTHORIZED → CAPTURED
+AUTHORIZED → FAILED
+AUTHORIZED → CANCELLED
+
+### 4.3 Failure Transitions
 
 ANY STATE → FAILED
 ANY STATE → CANCELLED
@@ -83,16 +108,27 @@ ANY STATE → CANCELLED
 
 ## 5. Transition Triggers
 
-| Trigger      | Description                      |
-| ------------ | -------------------------------- |
-| API Request  | Payment created or updated       |
-| PSP Response | Immediate response from PSP      |
-| Webhook      | Async update from PSP            |
-| System Logic | Antifraud or validation decision |
+| Trigger           | Description                             |
+| ----------------- | --------------------------------------- |
+| API Request       | Payment created or updated              |
+| PSP Response      | Immediate PSP response (not final)      |
+| Webhook           | Async update from PSP (source of truth) |
+| System Logic      | Antifraud or validation decision        |
+| Timeout / Polling | System cannot confirm final state       |
 
 ---
 
-## 6. Antifraud Impact
+## 6. Event-driven State Updates
+
+Payment status must be updated based on webhook events from PSPs.
+
+API responses are not considered final
+Webhooks are the primary source of truth
+System must handle duplicate and out-of-order events
+
+---
+
+## 7. Antifraud Impact
 
 Antifraud may influence transitions:
 
@@ -101,7 +137,7 @@ CREATED → PENDING (allowed)
 
 ---
 
-## 7. Routing Impact
+## 8. Routing Impact
 
 Routing determines which PSP is used during:
 
@@ -111,7 +147,7 @@ Routing does not change status directly but affects processing outcome.
 
 ---
 
-## 8. Idempotency Rules
+## 9. Idempotency Rules
 
 Repeated events must not change state incorrectly
 Duplicate webhooks must be ignored
@@ -119,20 +155,35 @@ State transitions must be validated before applying
 
 ---
 
-## 9. Invalid Transitions
+## 10. Invalid Transitions
 
-Examples of invalid transitions:
+Examples:
 
 CAPTURED → PENDING
 FAILED → PROCESSING
 CANCELLED → AUTHORIZED
 
-Such transitions must be rejected by the system.
+Such transitions must be rejected.
 
 ---
 
-## 10. Notes
+## 11. Final States
+
+Final states are:
+
+CAPTURED
+FAILED
+CANCELLED
+AUTHORIZATION_INCOMPLETE
+UNKNOWN
+
+No transitions are allowed from final states.
+
+---
+
+## 12. Notes
 
 Status is always derived from events
-Final states: CAPTURED, FAILED, CANCELLED
-System must handle out-of-order events safely
+Payment lifecycle is asynchronous
+External systems (PSPs) are considered unreliable
+System must be resilient to missing or delayed updates

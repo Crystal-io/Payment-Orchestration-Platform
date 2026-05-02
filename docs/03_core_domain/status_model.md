@@ -1,5 +1,39 @@
 # Payment Status Model
 
+```mermaid
+stateDiagram-v2
+    [*] --> CREATED
+
+    CREATED --> PENDING: payment accepted
+    CREATED --> FAILED: validation/fraud failed
+    CREATED --> CANCELLED: cancelled
+
+    PENDING --> PROCESSING: PSP processing started
+    PENDING --> REQUIRES_ACTION: 3DS / redirect required
+    PENDING --> FAILED: routing/fraud/PSP initiation failed
+    PENDING --> CANCELLED: cancelled
+
+    REQUIRES_ACTION --> PROCESSING: customer completed action
+    REQUIRES_ACTION --> AUTHORIZATION_INCOMPLETE: abandoned / expired
+    REQUIRES_ACTION --> FAILED: authentication failed
+    REQUIRES_ACTION --> CANCELLED: cancelled
+
+    PROCESSING --> AUTHORIZED: authorization confirmed
+    PROCESSING --> CAPTURED: immediate capture confirmed
+    PROCESSING --> FAILED: declined / failed
+    PROCESSING --> UNKNOWN: status cannot be confirmed
+
+    AUTHORIZED --> CAPTURED: capture completed
+    AUTHORIZED --> FAILED: rare reversal
+    AUTHORIZED --> CANCELLED: voided
+
+    CAPTURED --> [*]
+    FAILED --> [*]
+    CANCELLED --> [*]
+    AUTHORIZATION_INCOMPLETE --> [*]
+    UNKNOWN --> [*]
+```
+
 ## 1. Overview
 
 This document defines the payment lifecycle and all possible states of a Payment.

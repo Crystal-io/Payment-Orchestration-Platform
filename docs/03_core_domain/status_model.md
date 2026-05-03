@@ -36,7 +36,7 @@ stateDiagram-v2
 
 ## Payment Status Diagram
 
-![Payment Status Model](../../diagrams/uml/payment_status_model.png)
+![Payment Status Model](https://github.com/Crystal-io/Payment-Orchestration-Platform/blob/main/diagrams/uml/payment_status_model.jpg)
 
 ## 1. Overview
 

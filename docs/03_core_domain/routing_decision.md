@@ -2,30 +2,30 @@
 
 ## 1. Overview
 
-**Routing Decision** — это **иммутабельное решение системы**, определяющее:
+**Routing Decision** is an **immutable system decision** that determines:
 
-- какой PSP использовать для конкретного `Payment Attempt`
-- какие PSP доступны как fallback
-- почему был выбран именно этот путь
+- which PSP should be used for a specific `Payment Attempt`
+- which PSPs are available as fallback options
+- why a particular routing path was selected
 
 **Core principle:**
 
-> Routing Decision = snapshot логики маршрутизации в момент выполнения
+> Routing Decision = snapshot of routing logic at execution time
 
-Каждый `Payment Attempt` имеет **ровно один Routing Decision**.
+Each `Payment Attempt` has **exactly one Routing Decision**.
 
 ---
 
 ## 2. Business Value
 
-Routing Decision позволяет:
+Routing Decision enables:
 
-- ✔ реализовать multi-PSP стратегию
-- ✔ управлять failover цепочками
-- ✔ внедрять smart routing (по данным и метрикам)
-- ✔ проводить A/B тестирование PSP
-- ✔ анализировать эффективность маршрутизации
-- ✔ обеспечивать auditability (почему выбран PSP)
+- multi-PSP strategy execution
+- controlled failover handling
+- smart routing based on data and performance
+- A/B testing of PSPs
+- routing performance analytics
+- full auditability (why a PSP was selected)
 
 ---
 
@@ -44,21 +44,21 @@ Payment → Payment Attempt → Routing Decision
 
 ### 4.1 Creation
 
-Routing Decision создаётся:
+Routing Decision is created:
 
-- при создании `Payment Attempt`
-- до отправки запроса в PSP
+- during `Payment Attempt` creation
+- before sending request to PSP
 
 ---
 
 ### 4.2 Immutability
 
-После создания:
+After creation:
 
-- ❗ не изменяется
-- используется как источник правды для анализа
+- must NOT be modified
+- serves as source of truth for analysis
 
-Если условия изменились → создаётся новый attempt с новым decision
+If conditions change → a new attempt is created with a new decision
 
 ---
 
@@ -67,7 +67,7 @@ Routing Decision создаётся:
 1. Collect input data
 2. Apply routing rules
 3. Filter eligible PSPs
-4. Score / prioritize PSPs
+4. Score and prioritize PSPs
 5. Select primary PSP
 6. Build fallback chain
 7. Persist Routing Decision
@@ -76,7 +76,7 @@ Routing Decision создаётся:
 
 ## 6. Input Data
 
-Routing Decision использует:
+Routing Decision uses:
 
 ### Payment Data
 
@@ -84,7 +84,9 @@ Routing Decision использует:
 - currency
 - country
 - payment method
-- BIN / issuer (если доступен)
+- BIN / issuer (if available)
+
+---
 
 ### System Context
 
@@ -92,6 +94,8 @@ Routing Decision использует:
 - historical success rate
 - latency metrics
 - error rates
+
+---
 
 ### External Signals
 
@@ -105,7 +109,7 @@ Routing Decision использует:
 
 ### 7.1 Rule-based Routing
 
-Примеры:
+Examples:
 
 - country → PSP
 - currency → PSP
@@ -115,7 +119,7 @@ Routing Decision использует:
 
 ### 7.2 Priority Routing
 
-PSP выбирается по приоритету:
+PSPs are selected based on predefined priority:
 
 - primary
 - secondary
@@ -125,29 +129,29 @@ PSP выбирается по приоритету:
 
 ### 7.3 Load Balancing
 
-Распределение трафика:
+Traffic distribution strategies:
 
-- weighted (например 70/30)
+- weighted (e.g. 70/30 split)
 - round-robin
 
 ---
 
 ### 7.4 Smart Routing (Recommended)
 
-На основе:
+Based on:
 
 - success rate
 - latency
-- decline reasons
+- decline patterns
 
 ---
 
 ### 7.5 A/B Routing (Optional)
 
-Используется для:
+Used for:
 
-- тестирования PSP
-- оптимизации конверсии
+- PSP performance testing
+- conversion optimization
 
 ---
 
@@ -171,15 +175,15 @@ Fallback: [PSP_B, PSP_C]
 - timeout
 - technical error
 - retryable decline
-- routing policy
+- routing policy rules
 
 ---
 
 ### 8.3 Failover Behavior
 
-- new `Payment Attempt` is created
-- next PSP from fallback chain is used
-- new Routing Decision is generated
+- a new `Payment Attempt` is created
+- the next PSP from fallback chain is selected
+- a new Routing Decision is generated
 
 ---
 
@@ -192,12 +196,12 @@ Fallback: [PSP_B, PSP_C]
 | id                 | UUID      | Unique identifier             |
 | payment_id         | UUID      | Reference to Payment          |
 | payment_attempt_id | UUID      | Reference to Payment Attempt  |
-| selected_psp       | string    | Chosen PSP                    |
+| selected_psp       | string    | Selected PSP                  |
 | candidate_psps     | array     | Eligible PSPs                 |
 | fallback_order     | array     | Ordered fallback PSP list     |
 | decision_reason    | string    | Human-readable explanation    |
-| strategy_type      | string    | Rule / priority / smart / A-B |
-| created_at         | timestamp | Creation time                 |
+| strategy_type      | string    | Rule / priority / smart / A/B |
+| created_at         | timestamp | Creation timestamp            |
 
 ---
 
@@ -214,11 +218,11 @@ Fallback: [PSP_B, PSP_C]
 
 ### 9.3 Context Snapshot
 
-| Field               | Description                   |
-| ------------------- | ----------------------------- |
-| input_parameters    | Full input used for decision  |
-| antifraud_result    | Risk decision                 |
-| constraints_applied | Compliance / business filters |
+| Field               | Description                       |
+| ------------------- | --------------------------------- |
+| input_parameters    | Full input used for decision      |
+| antifraud_result    | Risk evaluation result            |
+| constraints_applied | Compliance / business constraints |
 
 ---
 
@@ -228,7 +232,7 @@ Routing Decision must be **explainable**.
 
 Example:
 
-"PSP_A selected due to highest success rate (92%) for BIN country + lowest latency"
+"PSP_A selected due to highest success rate (92%) for BIN country and lowest latency"
 
 This is critical for:
 
@@ -240,10 +244,10 @@ This is critical for:
 
 ## 11. Interaction with Payment Attempt
 
-- Attempt stores reference to Routing Decision
-- Attempt executes selected PSP
+- Payment Attempt stores reference to Routing Decision
+- Payment Attempt executes selected PSP
 - On retry:
-  - new Attempt is created
+  - new Payment Attempt is created
   - new Routing Decision is generated
 
 ---
@@ -275,7 +279,7 @@ Key metrics:
 
 **Why:**
 
-- conditions change (PSP health, antifraud)
+- system conditions change (PSP health, antifraud)
 - enables dynamic routing
 
 ---
@@ -284,8 +288,8 @@ Key metrics:
 
 **Why:**
 
-- predictable system behavior
-- controlled failover
+- ensures predictable system behavior
+- provides controlled failover
 
 ---
 
@@ -308,6 +312,6 @@ Key metrics:
 
 Without this entity, it is not possible to build:
 
-- scalable multi-PSP system
-- adaptive routing
+- scalable multi-PSP systems
+- adaptive routing mechanisms
 - conversion-optimized payment flows

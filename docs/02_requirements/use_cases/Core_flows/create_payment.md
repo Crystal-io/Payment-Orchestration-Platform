@@ -1,5 +1,35 @@
 # UC-001: Create Payment
 
+```mermaid
+sequenceDiagram
+    autonumber
+
+    actor Merchant as Merchant System
+    participant API as Payment API
+    participant Idem as Idempotency Store
+    participant Config as Merchant Config
+    participant PaymentSvc as Payment Service
+    participant DB as Payment DB
+    participant Outbox as Outbox / Event Bus
+
+    Merchant->>API: POST /payments
+    API->>API: Authenticate, authorize, validate request
+    API->>Idem: Check idempotency key
+
+    alt Duplicate request
+        Idem-->>API: Existing response
+        API-->>Merchant: 200 OK / Original response
+    else New request
+        API->>Config: Load merchant configuration
+        Config-->>API: Config snapshot
+        API->>PaymentSvc: Create Payment
+        PaymentSvc->>DB: Save Payment + Idempotency record atomically
+        PaymentSvc->>Outbox: Store PaymentCreated event
+        PaymentSvc-->>API: Payment created
+        API-->>Merchant: 201 Created
+    end
+```
+
 ## 1. Overview
 
 This use case describes how a Merchant creates a new `Payment` in the Payment Orchestration Platform.
